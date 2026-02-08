@@ -56,6 +56,7 @@
             width: fit-content;
             max-width: 95vw;
             margin-bottom: 20px;
+            display: inline-block; /* wichtig für sauberes Rendering */
         }
 
         #bgImage { 
@@ -129,7 +130,10 @@
     </div>
 
     <div id="canvas-container">
-        <img id="bgImage" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg" alt="Der Streik">
+        <img id="bgImage"
+             crossorigin="anonymous"
+             src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg"
+             alt="Der Streik">
     </div>
 
     <div id="trash" class="trash-zone">ZUM LÖSCHEN HIER LOSLASSEN</div>
@@ -138,6 +142,9 @@
         <b>Anleitung:</b> Sprechblase ziehen zum Bewegen. Tippen zum Schreiben. <br>
         <b>Löschen:</b> Blase ganz nach unten auf den roten Balken ziehen.
     </p>
+
+    <!-- html2canvas für echten Screenshot-Export -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script>
         const container = document.getElementById('canvas-container');
@@ -153,7 +160,9 @@
             bubble.style.top = '20px';
 
             const startMove = (e) => {
+                // Wenn man wirklich schreibt (Textcursor), nicht sofort ziehen
                 if (document.activeElement === bubble && e.target === bubble) return;
+
                 trash.style.display = 'block';
 
                 const isTouch = e.type.includes('touch');
@@ -166,26 +175,26 @@
 
                 const onMove = (evt) => {
                     if (evt.cancelable) evt.preventDefault();
+
                     const mX = isTouch ? evt.touches[0].clientX : evt.clientX;
                     const mY = isTouch ? evt.touches[0].clientY : evt.clientY;
                     const cRect = container.getBoundingClientRect();
-                    
+
                     bubble.style.left = (mX - cRect.left - shiftX) + 'px';
                     bubble.style.top = (mY - cRect.top - shiftY) + 'px';
 
-                    if (mY > window.innerHeight - 70) {
-                        bubble.style.opacity = '0.3';
-                    } else {
-                        bubble.style.opacity = '1';
-                    }
+                    // visuelles Feedback zum Löschen
+                    if (mY > window.innerHeight - 70) bubble.style.opacity = '0.3';
+                    else bubble.style.opacity = '1';
                 };
 
                 const stopMove = (evt) => {
                     const finalY = isTouch ? evt.changedTouches[0].clientY : evt.clientY;
-                    if (finalY > window.innerHeight - 70) {
-                        bubble.remove();
-                    }
+                    if (finalY > window.innerHeight - 70) bubble.remove();
+
+                    bubble.style.opacity = '1';
                     trash.style.display = 'none';
+
                     document.removeEventListener(isTouch ? 'touchmove' : 'mousemove', onMove);
                     document.removeEventListener(isTouch ? 'touchend' : 'mouseup', stopMove);
                 };
@@ -199,54 +208,45 @@
             container.appendChild(bubble);
         }
 
-        function downloadImage() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Setze Canvas-Größe auf die echte Bildgröße
-            canvas.width = bgImage.naturalWidth;
-            canvas.height = bgImage.naturalHeight;
-            
+        async function downloadImage() {
+            // Trash-Leiste nicht mitrendern
+            const oldTrashDisplay = trash.style.display;
+            trash.style.display = 'none';
+
+            // Kleine Pause, damit Layout stabil ist
+            await new Promise(r => setTimeout(r, 50));
+
             try {
-                // Hintergrund zeichnen
-                ctx.drawImage(bgImage, 0, 0);
-                
-                const scale = bgImage.naturalWidth / bgImage.clientWidth;
-                const bubbles = document.querySelectorAll('.bubble');
-
-                bubbles.forEach(b => {
-                    const bRect = b.getBoundingClientRect();
-                    const cRect = container.getBoundingClientRect();
-                    
-                    const x = (bRect.left - cRect.left) * scale;
-                    const y = (bRect.top - cRect.top) * scale;
-                    const w = bRect.width * scale;
-                    const h = bRect.height * scale;
-                    
-                    // Sprechblase
-                    ctx.fillStyle = "white";
-                    ctx.strokeStyle = "black";
-                    ctx.lineWidth = 2 * scale;
-                    ctx.beginPath();
-                    ctx.roundRect(x, y, w, h, 15 * scale);
-                    ctx.fill();
-                    ctx.stroke();
-
-                    // Text
-                    ctx.fillStyle = "black";
-                    ctx.font = `bold ${14 * scale}px Arial`;
-                    ctx.textAlign = "center";
-                    ctx.fillText(b.innerText, x + w/2, y + h/2 + (5 * scale));
+                const canvas = await html2canvas(container, {
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: "#ffffff",
+                    scale: 3,           // Qualität
+                    logging: false
                 });
-                
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                const link = document.createElement('a');
-                link.download = 'analyse-der-streik.jpg';
+
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+
+                // Download versuchen
+                const link = document.createElement("a");
+                link.download = "analyse-der-streik.jpg";
                 link.href = dataUrl;
                 link.click();
+
+                // iOS/Safari fallback: wenn Download blockt -> neues Tab
+                // (nicht perfekt, aber besser als "geht nicht")
+                setTimeout(() => {
+                    // Manche Safari-Versionen ignorieren .click() auf <a download>
+                    // Dann kann der Nutzer das Bild im neuen Tab speichern.
+                    // Wenn es geklappt hat, stört das nicht, weil Popup-Blocker meist greift.
+                    window.open(dataUrl, "_blank");
+                }, 300);
+
             } catch (e) {
-                alert("Der Download wird vom Browser blockiert. Bitte nutze stattdessen einen Screenshot.");
+                alert("Export hat nicht geklappt (oft wegen Bild-Rechten/CORS). Notlösung: Screenshot oder Bild lokal hosten.");
                 console.error(e);
+            } finally {
+                trash.style.display = oldTrashDisplay;
             }
         }
     </script>
