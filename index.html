@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sowi Comic-Editor</title>
+    <title>Sowi Analyse: Der Streik</title>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -18,7 +18,6 @@
             flex-direction: column; 
             align-items: center; 
             background: var(--bg-color);
-            /* touch-action: none wurde entfernt, damit Scrollen wieder geht */
         }
 
         header {
@@ -61,7 +60,7 @@
 
         #bgImage { 
             display: block; 
-            max-width: 100%; /* Bild passt sich der Breite an */
+            max-width: 100%; 
             height: auto; 
             user-select: none;
             -webkit-user-drag: none;
@@ -76,12 +75,12 @@
             border-radius: 15px; 
             min-width: 60px; 
             max-width: 200px;
-            font-size: 16px;
+            font-size: 14px;
             z-index: 100;
             outline: none;
             text-align: center;
             word-wrap: break-word;
-            touch-action: none; /* Nur die Blase verhindert das Scrollen beim Anfassen */
+            touch-action: none; 
         }
 
         .bubble::after { 
@@ -122,7 +121,7 @@
 </head>
 <body>
 
-    <header><h1>Sowi Comic-Editor</h1></header>
+    <header><h1>Analyse: "Der Streik" (Robert Koehler)</h1></header>
     
     <div class="controls">
         <button class="primary" onclick="addBubble()">+ Sprechblase</button>
@@ -130,14 +129,14 @@
     </div>
 
     <div id="canvas-container">
-        <img id="bgImage" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg" alt="Analysebild">
+        <img id="bgImage" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg" alt="Der Streik">
     </div>
 
     <div id="trash" class="trash-zone">ZUM LÖSCHEN HIER LOSLASSEN</div>
 
     <p class="hint">
-        <b>Anleitung:</b> Zum Bewegen Blase ziehen. Zum Schreiben Text tippen. <br>
-        <b>Löschen:</b> Blase auf den roten Balken am unteren Bildschirmrand ziehen.
+        <b>Anleitung:</b> Sprechblase ziehen zum Bewegen. Tippen zum Schreiben. <br>
+        <b>Löschen:</b> Blase ganz nach unten auf den roten Balken ziehen.
     </p>
 
     <script>
@@ -150,13 +149,11 @@
             bubble.className = 'bubble';
             bubble.contentEditable = true;
             bubble.innerText = 'Text...';
-            bubble.style.left = '10px';
-            bubble.style.top = '10px';
+            bubble.style.left = '20px';
+            bubble.style.top = '20px';
 
             const startMove = (e) => {
-                // Wenn man editiert, nicht verschieben
                 if (document.activeElement === bubble && e.target === bubble) return;
-                
                 trash.style.display = 'block';
 
                 const isTouch = e.type.includes('touch');
@@ -168,18 +165,14 @@
                 const shiftY = clientY - rect.top;
 
                 const onMove = (evt) => {
+                    if (evt.cancelable) evt.preventDefault();
                     const mX = isTouch ? evt.touches[0].clientX : evt.clientX;
                     const mY = isTouch ? evt.touches[0].clientY : evt.clientY;
                     const cRect = container.getBoundingClientRect();
                     
-                    // Position innerhalb des Containers berechnen
-                    let newX = mX - cRect.left - shiftX;
-                    let newY = mY - cRect.top - shiftY;
+                    bubble.style.left = (mX - cRect.left - shiftX) + 'px';
+                    bubble.style.top = (mY - cRect.top - shiftY) + 'px';
 
-                    bubble.style.left = newX + 'px';
-                    bubble.style.top = newY + 'px';
-
-                    // Trash Zone Check (relativ zum Viewport)
                     if (mY > window.innerHeight - 70) {
                         bubble.style.opacity = '0.3';
                     } else {
@@ -189,11 +182,9 @@
 
                 const stopMove = (evt) => {
                     const finalY = isTouch ? evt.changedTouches[0].clientY : evt.clientY;
-                    
                     if (finalY > window.innerHeight - 70) {
                         bubble.remove();
                     }
-                    
                     trash.style.display = 'none';
                     document.removeEventListener(isTouch ? 'touchmove' : 'mousemove', onMove);
                     document.removeEventListener(isTouch ? 'touchend' : 'mouseup', stopMove);
@@ -208,57 +199,55 @@
             container.appendChild(bubble);
         }
 
-        async function downloadImage() {
+        function downloadImage() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Nutze die natürliche Größe des Bildes für hohe Qualität
+            // Setze Canvas-Größe auf die echte Bildgröße
             canvas.width = bgImage.naturalWidth;
             canvas.height = bgImage.naturalHeight;
-            ctx.drawImage(bgImage, 0, 0);
             
-            const scale = bgImage.naturalWidth / bgImage.clientWidth;
-            const bubbles = document.querySelectorAll('.bubble');
+            try {
+                // Hintergrund zeichnen
+                ctx.drawImage(bgImage, 0, 0);
+                
+                const scale = bgImage.naturalWidth / bgImage.clientWidth;
+                const bubbles = document.querySelectorAll('.bubble');
 
-            bubbles.forEach(b => {
-                const bRect = b.getBoundingClientRect();
-                const cRect = container.getBoundingClientRect();
-                
-                const x = (bRect.left - cRect.left) * scale;
-                const y = (bRect.top - cRect.top) * scale;
-                const w = bRect.width * scale;
-                const h = bRect.height * scale;
-                
-                ctx.fillStyle = "white";
-                ctx.strokeStyle = "black";
-                ctx.lineWidth = 2 * scale;
-                
-                // Sprechblase zeichnen
-                ctx.beginPath();
-                ctx.roundRect(x, y, w, h, 15 * scale);
-                ctx.fill();
-                ctx.stroke();
+                bubbles.forEach(b => {
+                    const bRect = b.getBoundingClientRect();
+                    const cRect = container.getBoundingClientRect();
+                    
+                    const x = (bRect.left - cRect.left) * scale;
+                    const y = (bRect.top - cRect.top) * scale;
+                    const w = bRect.width * scale;
+                    const h = bRect.height * scale;
+                    
+                    // Sprechblase
+                    ctx.fillStyle = "white";
+                    ctx.strokeStyle = "black";
+                    ctx.lineWidth = 2 * scale;
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, w, h, 15 * scale);
+                    ctx.fill();
+                    ctx.stroke();
 
-                // Kleiner Pfeil (optional für Export)
-                ctx.beginPath();
-                ctx.moveTo(x + 20*scale, y + h);
-                ctx.lineTo(x + 10*scale, y + h + 15*scale);
-                ctx.lineTo(x + 30*scale, y + h);
-                ctx.fill();
-                ctx.stroke();
+                    // Text
+                    ctx.fillStyle = "black";
+                    ctx.font = `bold ${14 * scale}px Arial`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(b.innerText, x + w/2, y + h/2 + (5 * scale));
+                });
                 
-                ctx.fillStyle = "black";
-                ctx.font = `bold ${14 * scale}px Arial`;
-                ctx.textAlign = "center";
-                
-                // Textumbruch-Handling (simpel)
-                ctx.fillText(b.innerText, x + w/2, y + h/2 + (5 * scale));
-            });
-            
-            const link = document.createElement('a');
-            link.download = 'analyse-ergebnis.jpg';
-            link.href = canvas.toDataURL('image/jpeg', 0.9);
-            link.click();
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                const link = document.createElement('a');
+                link.download = 'analyse-der-streik.jpg';
+                link.href = dataUrl;
+                link.click();
+            } catch (e) {
+                alert("Der Download wird vom Browser blockiert. Bitte nutze stattdessen einen Screenshot.");
+                console.error(e);
+            }
         }
     </script>
 </body>
