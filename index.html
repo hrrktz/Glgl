@@ -56,6 +56,8 @@
             width: fit-content;
             max-width: 95vw;
             margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
         }
 
         #bgImage { 
@@ -64,6 +66,15 @@
             height: auto; 
             user-select: none;
             -webkit-user-drag: none;
+        }
+
+        .image-credits {
+            padding: 8px;
+            font-size: 0.75em;
+            color: #555;
+            background: white;
+            text-align: right;
+            border-top: 1px solid #eee;
         }
 
         .bubble { 
@@ -125,10 +136,13 @@
     
     <div class="controls">
         <button class="primary" onclick="addBubble()">+ Sprechblase</button>
-    </div>
+        </div>
 
     <div id="canvas-container">
-        <img id="bgImage" src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg" alt="Der Streik">
+        <img id="bgImage" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg" alt="Der Streik">
+        <div class="image-credits">
+            Robert Koehler: <i>Der Streik</i> (1886) | Quelle: Wikimedia Commons / DHM
+        </div>
     </div>
 
     <div id="trash" class="trash-zone">ZUM LÖSCHEN HIER LOSLASSEN</div>
