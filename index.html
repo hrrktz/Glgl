@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sprechblasen Industrialisierung</title>
+
+<style>
+:root {
+    --primary-color: #2c3e50;
+    --delete-color: #e74c3c;
+    --bg-color: #f4f7f6;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg-color);
+    touch-action: manipulation;
+}
+
+header {
+    width: 100%;
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+.controls {
+    margin: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+button {
+    padding: 12px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background: white;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+button.primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+#canvas-container {
+    position: relative;
+    border: 2px solid #333;
+    background: #fff;
+    display: inline-block;
+    max-width: 95vw;
+}
+
+#bgImage {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.bubble {
+    position: absolute;
+    padding: 28px 18px 12px;
+    background: white;
+    border: 2px solid black;
+    border-radius: 20px;
+    min-width: 80px;
+    max-width: 250px;
+    font-size: 16px;
+}
+
+.drag-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    border-bottom: 1px solid #000;
+    border-radius: 18px 18px 0 0;
+    cursor: move;
+    background: rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    user-select: none;
+}
+
+.bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 20px;
+    border-width: 12px 12px 0;
+    border-style: solid;
+    border-color: black transparent;
+}
+
+.delete-btn {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    background: var(--delete-color);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 2px solid white;
+}
+
+.hint {
+    margin: 15px;
+    font-size: 0.85em;
+    color: #7f8c8d;
+    text-align: center;
+    max-width: 80%;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>Lass die Menschen von damals sprechen!</h1>
+</header>
+
+<div class="controls">
+<button class="primary" onclick="addBubble()">+ Sprechblase</button>
+<button onclick="exportImage()">Als JPEG speichern</button>
+</div>
+
+<div id="canvas-container">
+<img id="bgImage"
+crossorigin="anonymous"
+src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg"
+alt="Analysebild">
+</div>
+
+<p class="hint">
+Oben an der Leiste ziehen. In die Mitte klicken zum Schreiben. [x] löscht die Blase.
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+const container = document.getElementById('canvas-container');
+
+function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+}
+
+function addBubble() {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    const handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.textContent = 'ziehen';
+    handle.contentEditable = false;
+
+    const text = document.createElement('div');
+    text.contentEditable = true;
+    text.innerText = 'Text...';
+    text.style.outline = 'none';
+
+    const delBtn = document.createElement('div');
+    delBtn.className = 'delete-btn';
+    delBtn.innerHTML = '&times;';
+    delBtn.contentEditable = false;
+
+    delBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm('Sprechblase löschen?')) bubble.remove();
+    });
+
+    bubble.appendChild(handle);
+    bubble.appendChild(delBtn);
+    bubble.appendChild(text);
+
+    bubble.style.left = '50px';
+    bubble.style.top = '50px';
+
+    handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+
+        const cRect = container.getBoundingClientRect();
+        const bRect = bubble.getBoundingClientRect();
+
+        const offsetLeft = bRect.left - cRect.left;
+        const offsetTop = bRect.top - cRect.top;
+
+        const move = (evt) => {
+            const dx = evt.clientX - startX;
+            const dy = evt.clientY - startY;
+
+            const newLeft = offsetLeft + dx;
+            const newTop = offsetTop + dy;
+
+            const maxLeft = cRect.width - bRect.width;
+            const maxTop = cRect.height - bRect.height;
+
+            bubble.style.left = clamp(newLeft, 0, maxLeft) + 'px';
+            bubble.style.top = clamp(newTop, 0, maxTop) + 'px';
+        };
+
+        const up = () => {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+        };
+
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+    });
+
+    container.appendChild(bubble);
+
+    text.focus();
+    document.getSelection().selectAllChildren(text);
+}
+
+function exportImage() {
+    const element = document.getElementById("canvas-container");
+
+    html2canvas(element, {
+        scale: 3,
+        useCORS: true
+    }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "sprechblasen-gl.jpg";
+        link.href = canvas.toDataURL("image/jpeg", 0.95);
+        link.click();
+    });
+}
+</script>
+
+</body>
+</html>
