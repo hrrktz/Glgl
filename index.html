@@ -1,258 +1,250 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Sprechblasen Industrialisierung</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sowi Analyse-Tool</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #27ae60;
+            --bg-color: #f4f7f6;
+        }
 
-<style>
-:root {
-    --primary-color: #2c3e50;
-    --delete-color: #e74c3c;
-    --bg-color: #f4f7f6;
-}
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            background: var(--bg-color);
+            touch-action: none; /* Wichtig für das Ziehen am Tablet */
+        }
 
-body {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: var(--bg-color);
-    touch-action: manipulation;
-}
+        header {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+        }
 
-header {
-    width: 100%;
-    background: var(--primary-color);
-    color: white;
-    padding: 1rem 0;
-    text-align: center;
-}
+        .controls { 
+            margin: 15px; 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center;
+        }
 
-.controls {
-    margin: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
+        button { 
+            padding: 12px 20px; 
+            font-size: 16px;
+            cursor: pointer; 
+            background: white; 
+            border: 2px solid var(--primary-color); 
+            border-radius: 8px; 
+            font-weight: bold;
+        }
 
-button {
-    padding: 12px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    background: white;
-    color: var(--primary-color);
-    border: 2px solid var(--primary-color);
-    border-radius: 8px;
-    font-weight: bold;
-}
+        button.primary { background: var(--primary-color); color: white; }
+        button.download { background: var(--accent-color); color: white; border-color: var(--accent-color); }
 
-button.primary {
-    background: var(--primary-color);
-    color: white;
-}
+        #canvas-container { 
+            position: relative; 
+            border: 2px solid #333; 
+            background: #fff; 
+            max-width: 95vw;
+            overflow: hidden;
+        }
 
-#canvas-container {
-    position: relative;
-    border: 2px solid #333;
-    background: #fff;
-    display: inline-block;
-    max-width: 95vw;
-}
+        #bgImage { 
+            display: block; 
+            max-width: 100%; 
+            height: auto; 
+            user-select: none;
+            -webkit-user-drag: none;
+        }
 
-#bgImage {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    user-select: none;
-    -webkit-user-drag: none;
-}
+        .bubble { 
+            position: absolute; 
+            cursor: move; 
+            padding: 12px 18px; 
+            background: white; 
+            border: 2px solid black; 
+            border-radius: 20px; 
+            min-width: 80px; 
+            max-width: 250px;
+            font-size: 16px;
+            z-index: 100;
+            outline: none;
+            text-align: center;
+        }
 
-.bubble {
-    position: absolute;
-    padding: 28px 18px 12px;
-    background: white;
-    border: 2px solid black;
-    border-radius: 20px;
-    min-width: 80px;
-    max-width: 250px;
-    font-size: 16px;
-}
+        .bubble::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -12px; 
+            left: 20px; 
+            border-width: 12px 12px 0; 
+            border-style: solid; 
+            border-color: black transparent; 
+        }
 
-.drag-handle {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 24px;
-    border-bottom: 1px solid #000;
-    border-radius: 18px 18px 0 0;
-    cursor: move;
-    background: rgba(0,0,0,0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    user-select: none;
-}
+        .hint { 
+            margin: 15px; 
+            font-size: 0.9em; 
+            color: #34495e; 
+            text-align: center;
+            background: #d1d8e0;
+            padding: 10px;
+            border-radius: 5px;
+        }
 
-.bubble::after {
-    content: '';
-    position: absolute;
-    bottom: -12px;
-    left: 20px;
-    border-width: 12px 12px 0;
-    border-style: solid;
-    border-color: black transparent;
-}
-
-.delete-btn {
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    width: 24px;
-    height: 24px;
-    background: var(--delete-color);
-    color: white;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 22px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    border: 2px solid white;
-}
-
-.hint {
-    margin: 15px;
-    font-size: 0.85em;
-    color: #7f8c8d;
-    text-align: center;
-    max-width: 80%;
-}
-</style>
+        .trash-zone {
+            width: 100%;
+            height: 40px;
+            background: #e74c3c;
+            color: white;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            margin-top: 5px;
+            display: none; /* Erscheint nur beim Ziehen */
+        }
+    </style>
 </head>
-
 <body>
 
-<header>
-<h1>Lass die Menschen von damals sprechen!</h1>
-</header>
+    <header><h1>Sowi Comic-Editor</h1></header>
+    
+    <div class="controls">
+        <button class="primary" onclick="addBubble()">+ Sprechblase</button>
+        <button class="download" onclick="downloadImage()">Bild speichern (JPEG)</button>
+    </div>
 
-<div class="controls">
-<button class="primary" onclick="addBubble()">+ Sprechblase</button>
-<button onclick="exportImage()">Als JPEG speichern</button>
-</div>
+    <div id="canvas-container">
+        <img id="bgImage" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Placeholder_LCa.svg/1024px-Placeholder_LCa.svg.png" alt="Analysebild">
+    </div>
 
-<div id="canvas-container">
-<img id="bgImage"
-crossorigin="anonymous"
-src="https://upload.wikimedia.org/wikipedia/commons/1/17/%22Der_Streik%22_von_Robert_Koehler.jpg"
-alt="Analysebild">
-</div>
+    <div id="trash" class="trash-zone">ZUM LÖSCHEN HIERHER ZIEHEN</div>
 
-<p class="hint">
-Oben an der Leiste ziehen. In die Mitte klicken zum Schreiben. [x] löscht die Blase.
-</p>
+    <p class="hint">
+        <b>Anleitung:</b> Zum Verschieben Blase ziehen. Zum Schreiben Text tippen. <br>
+        <b>Zum Löschen:</b> Blase ganz an den unteren Rand (rote Zone) ziehen.
+    </p>
 
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        const container = document.getElementById('canvas-container');
+        const bgImage = document.getElementById('bgImage');
+        const trash = document.getElementById('trash');
 
-<script>
-const container = document.getElementById('canvas-container');
+        function addBubble() {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.contentEditable = true;
+            bubble.innerText = 'Text...';
+            bubble.style.left = '50px';
+            bubble.style.top = '50px';
 
-function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-}
+            const startMove = (e) => {
+                if (document.activeElement === bubble && e.target !== bubble) return;
+                trash.style.display = 'block';
 
-function addBubble() {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
+                const isTouch = e.type.includes('touch');
+                const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+                const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
-    const handle = document.createElement('div');
-    handle.className = 'drag-handle';
-    handle.textContent = 'ziehen';
-    handle.contentEditable = false;
+                const rect = bubble.getBoundingClientRect();
+                const shiftX = clientX - rect.left;
+                const shiftY = clientY - rect.top;
 
-    const text = document.createElement('div');
-    text.contentEditable = true;
-    text.innerText = 'Text...';
-    text.style.outline = 'none';
+                const onMove = (evt) => {
+                    const mX = isTouch ? evt.touches[0].clientX : evt.clientX;
+                    const mY = isTouch ? evt.touches[0].clientY : evt.clientY;
+                    const cRect = container.getBoundingClientRect();
+                    
+                    bubble.style.left = (mX - cRect.left - shiftX) + 'px';
+                    bubble.style.top = (mY - cRect.top - shiftY) + 'px';
 
-    const delBtn = document.createElement('div');
-    delBtn.className = 'delete-btn';
-    delBtn.innerHTML = '&times;';
-    delBtn.contentEditable = false;
+                    // Check Trash Zone
+                    if (mY > cRect.bottom - 20) {
+                        bubble.style.opacity = '0.5';
+                        trash.style.background = '#c0392b';
+                    } else {
+                        bubble.style.opacity = '1';
+                        trash.style.background = '#e74c3c';
+                    }
+                };
 
-    delBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (confirm('Sprechblase löschen?')) bubble.remove();
-    });
+                const stopMove = (evt) => {
+                    const finalY = isTouch ? evt.changedTouches[0].clientY : evt.clientY;
+                    const cRect = container.getBoundingClientRect();
+                    
+                    if (finalY > cRect.bottom - 20) {
+                        bubble.remove();
+                    }
+                    
+                    trash.style.display = 'none';
+                    document.removeEventListener(isTouch ? 'touchmove' : 'mousemove', onMove);
+                    document.removeEventListener(isTouch ? 'touchend' : 'mouseup', stopMove);
+                };
 
-    bubble.appendChild(handle);
-    bubble.appendChild(delBtn);
-    bubble.appendChild(text);
+                document.addEventListener(isTouch ? 'touchmove' : 'mousemove', onMove, { passive: false });
+                document.addEventListener(isTouch ? 'touchend' : 'mouseup', stopMove);
+            };
 
-    bubble.style.left = '50px';
-    bubble.style.top = '50px';
+            bubble.addEventListener('mousedown', startMove);
+            bubble.addEventListener('touchstart', startMove, { passive: false });
+            container.appendChild(bubble);
+        }
 
-    handle.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-
-        const startX = e.clientX;
-        const startY = e.clientY;
-
-        const cRect = container.getBoundingClientRect();
-        const bRect = bubble.getBoundingClientRect();
-
-        const offsetLeft = bRect.left - cRect.left;
-        const offsetTop = bRect.top - cRect.top;
-
-        const move = (evt) => {
-            const dx = evt.clientX - startX;
-            const dy = evt.clientY - startY;
-
-            const newLeft = offsetLeft + dx;
-            const newTop = offsetTop + dy;
-
-            const maxLeft = cRect.width - bRect.width;
-            const maxTop = cRect.height - bRect.height;
-
-            bubble.style.left = clamp(newLeft, 0, maxLeft) + 'px';
-            bubble.style.top = clamp(newTop, 0, maxTop) + 'px';
-        };
-
-        const up = () => {
-            document.removeEventListener('pointermove', move);
-            document.removeEventListener('pointerup', up);
-        };
-
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', up);
-    });
-
-    container.appendChild(bubble);
-
-    text.focus();
-    document.getSelection().selectAllChildren(text);
-}
-
-function exportImage() {
-    const element = document.getElementById("canvas-container");
-
-    html2canvas(element, {
-        scale: 3,
-        useCORS: true
-    }).then(canvas => {
-        const link = document.createElement("a");
-        link.download = "sprechblasen-gl.jpg";
-        link.href = canvas.toDataURL("image/jpeg", 0.95);
-        link.click();
-    });
-}
-</script>
-
+        async function downloadImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = bgImage.naturalWidth;
+            canvas.height = bgImage.naturalHeight;
+            
+            // 1. Hintergrundbild zeichnen
+            ctx.drawImage(bgImage, 0, 0);
+            
+            // Verhältnis zwischen Anzeige und Originalbild berechnen
+            const scale = bgImage.naturalWidth / bgImage.clientWidth;
+            
+            // 2. Sprechblasen zeichnen
+            const bubbles = document.querySelectorAll('.bubble');
+            bubbles.forEach(b => {
+                const bRect = b.getBoundingClientRect();
+                const cRect = container.getBoundingClientRect();
+                
+                const x = (bRect.left - cRect.left) * scale;
+                const y = (bRect.top - cRect.top) * scale;
+                const w = bRect.width * scale;
+                const h = bRect.height * scale;
+                
+                // Sprechblase Form
+                ctx.fillStyle = "white";
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 2 * scale;
+                
+                // Einfaches Rechteck für den Export (Sprechblasen-Look)
+                ctx.beginPath();
+                ctx.roundRect(x, y, w, h, 20 * scale);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Text zeichnen
+                ctx.fillStyle = "black";
+                ctx.font = `${16 * scale}px sans-serif`;
+                ctx.textAlign = "center";
+                ctx.fillText(b.innerText, x + w/2, y + h/2 + (6 * scale));
+            });
+            
+            const link = document.createElement('a');
+            link.download = 'mein-sowi-bild.jpg';
+            link.href = canvas.toDataURL('image/jpeg', 0.8);
+            link.click();
+        }
+    </script>
 </body>
 </html>
